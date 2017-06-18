@@ -1,0 +1,36 @@
+<ion-view view-title="Report parking spot">
+  <ion-content>
+
+    <div class="item item-divider item-positive">Position</div>
+    <img src="{{staticMapSrc}}">
+
+    <form name="propertiesForm" ng-submit="submitParkingSpot()">
+      <div class="item item-divider item-positive">Costs</div>
+      <ion-list>
+        <ion-radio ng-model="parkingspot.free" ng-value="true">free</ion-radio>
+        <ion-radio ng-model="parkingspot.free" ng-value="false">chargeable</ion-radio>
+      </ion-list>
+
+      <div ng-if="!parkingspot.free">
+        <div class="item item-divider item-positive">Chargeable Weekdays</div>
+        <div class="row">
+          <div class="col" ng-repeat="(day, value) in parkingspot.weekdays">
+            <div class="checkbox checkbox-circle">
+              <input type="checkbox" id="wd" ng-model="parkingspot.weekdays[day]">
+              <label for="wd" class="positive"><b>{{day}}</b></label>
+            </div>
+          </div>
+        </div>
+
+        <label class="item item-input">
+          <input type="number" id="costs" ng-model="parkingspot.costs" step="0.10" placeholder="0.50" required>
+          <span class="input-label"> € per hour</span>
+        </label>
+      </div>
+
+      <div class="bar-footer">
+        <button class="button button-block button-positive" type="submit">Report parking spot</button>
+      </div>
+    </form>
+  </ion-content>
+</ion-view>
