@@ -200,15 +200,90 @@ angular.module('parkingSpot.factories', [])
         return DatabaseService.findNearParkingSpots(coordinates, distance).then(function (parkingspots) {
           setParkingspotMarkers(parkingspots);
         });
+      },
+
+      filterByPrice: function (costs) {
+        var filteredParkingSpots = [];
+        if (costs === 0) {
+          filteredParkingSpots = parkingSpots.filter(function (parkingspot) {
+            return parkingspot.free;
+          });
+        } else {
+          filteredParkingSpots = parkingSpots.filter(function (parkingspot) {
+            return parkingspot.costs <= costs;
+          });
+        }
+        setParkingspotMarkers(filteredParkingSpots);
       }
     };
     return methods;
   })
 
+  .factory('FilterService', function (MapService, ParkingSpotMarkerService, $q) {
+    function finishFiltering(filter, newQueryNeeded) {
+      if(newQueryNeeded) {
+        ParkingSpotMarkerService.showNearParkingSpots(filter.coordinates, filter.perimeter).then(function () {
+          checkPrice(filter.nomatter, filter.costs);
+        });
+      } else {
+        checkPrice(filter.nomatter, filter.costs);
+      }
+    }
+
+    function checkPrice(nomatter, costs) {
+      if (!nomatter) {
+        ParkingSpotMarkerService.filterByPrice(costs);
+      }
+    }
+
+    function transformToCoordinates(searchString) {
+      var q = $q.defer();
+      var geocoder = new google.maps.Geocoder();
+      geocoder.geocode({'address': searchString}, function (results, status) {
+        if (status === 'OK') {
+          var coordinates = results[0].geometry.location;
+          MapService.getMap().setCenter(coordinates);
+          q.resolve({lat: coordinates.lat(), lng: coordinates.lng()});
+        } else {
+          console.log('Geocode was not successful for the following reason: ' + status);
+          q.reject();
+        }
+      });
+      return q.promise;
+    }
+
+    return {
+
+      applyFilter: function (filter) {
+        console.log(filter);
+        var newQueryNeeded = false;
+
+        if (!(filter.perimeter === 900)) {
+          filter.perimeter = parseInt(filter.perimeter);
+          newQueryNeeded = true;
+        }
+
+        // Check if location has changed
+        if (filter.location === 'Current Position') {
+          filter.coordinates = MapService.currentPosition;
+          finishFiltering(filter, newQueryNeeded);
+        } else {
+          // Transform search field input to coordinates
+          transformToCoordinates(filter.location).then(function (coordinates) {
+            filter.coordinates = coordinates;
+            newQueryNeeded = true;
+            finishFiltering(filter, newQueryNeeded)
+          });
+        }
+      }
+    }
+
+  })
+
   .factory('PopupService', function ($ionicPopup) {
     return {
       showPopup: function(title, message) {
-        var myPopup = $ionicPopup.show({
+        $ionicPopup.show({
           title: title,
           subTitle: message,
           buttons: [

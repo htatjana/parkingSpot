@@ -4,12 +4,41 @@ angular.module('parkingSpot.controllers', [])
   })
 
 
-  .controller('MapCtrl', function ($scope, MapService, DatabaseService, ParkingSpotMarkerService) {
+  .controller('MapCtrl', function ($scope, MapService, DatabaseService, ParkingSpotMarkerService, FilterService, $ionicModal) {
+    $scope.filter = {
+      perimeter: 900,
+      costs: 0,
+      nomatter: true,
+      location: 'Current Position'
+    };
+
+    $scope.applyFilter= function () {
+      FilterService.applyFilter($scope.filter);
+      $scope.closeFilter();
+    };
+
     //Inital loading of parking spot markers
     MapService.getCurrPosition().then(function (position) {
       ParkingSpotMarkerService.showNearParkingSpots({lat: position.latitude, lng: position.longitude}, 900);
       MapService.currentPosition = {lat: position.latitude, lng: position.longitude};
     });
+
+    $ionicModal.fromTemplateUrl('templates/filterModal.html', {
+      scope: $scope,
+      animation: 'slide-in-up'
+    }).then(function (modal) {
+      $scope.modal = modal;
+    });
+
+    $scope.openFilter = function () {
+      $scope.modal.show();
+    };
+
+    $scope.closeFilter = function () {
+      $scope.modal.hide();
+    };
+
+
   })
 
 

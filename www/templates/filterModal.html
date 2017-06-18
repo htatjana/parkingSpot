@@ -1,0 +1,41 @@
+<ion-modal-view class="filterModal">
+  <ion-header-bar class="bar-positive">
+    <h1 class="title">Filter parking spots</h1>
+    <button class="button button-icon icon-right ion-close" ng-click="closeFilter()"></button>
+  </ion-header-bar>
+  <ion-content padding="20">
+    <form ng-submit="applyFilter()">
+      <div class="item item-input">
+        <input type="text" ng-model="filter.location">
+        <button class="button button-icon icon ion-location positive"></button>
+      </div>
+
+
+      <label class="item item-input item-stacked-label positive">
+        <span class="input-label">Perimeter</span>
+        <button class="button button-outline button-small button-positive resultLabel" ng-disabled="true">
+          {{filter.perimeter}}
+        </button>
+      </label>
+      <div class="item range range-positive">
+        0
+        <input type="range" name="volume" min="0" max="10000" step="100" ng-model="filter.perimeter">
+        10 000 m
+      </div>
+
+      <label class="item item-input item-stacked-label positive">
+        <span class="input-label">Price</span>
+        <button class="button button-outline button-small button-positive resultLabel" ng-if="!filter.nomatter" ng-disabled="true">
+          {{filter.costs}}
+        </button>
+      </label>
+      <ion-checkbox ng-model="filter.nomatter">All prices</ion-checkbox>
+      <div class="item range range-positive" ng-if="!filter.nomatter">
+        0
+        <input type="range" name="volume" min="0.00" max="5.00" step="0.10" ng-model="filter.costs">
+        5 €
+      </div>
+      <button class="button button-positive button-block" type="submit">OK</button>
+    </form>
+  </ion-content>
+</ion-modal-view>
