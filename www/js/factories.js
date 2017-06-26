@@ -45,6 +45,7 @@ angular.module('parkingSpot.factories', [])
           }));
 
           var map = MapService.getMap();
+
           map.addListener('click', function (event) {
             var pos = {lat: event.latLng.lat(), lng: event.latLng.lng()};
             MapService.setMarker(pos);
@@ -61,11 +62,10 @@ angular.module('parkingSpot.factories', [])
   })
 
 
-  .factory('MapService', function ($q, PopupService) {
+  .factory('MapService', function ($q, PopupService, InfowindowService) {
     var currentPosition = {};
     var map;
     var marker;
-    var infowindow;
 
     function handleError(error) {
       if (error.code === 1) {
@@ -98,12 +98,7 @@ angular.module('parkingSpot.factories', [])
           map: map
         });
 
-        marker.addListener('click', function () {
-          infowindow = new google.maps.InfoWindow({
-            content: '<a class="button button-small button-assertive" href="#/app/addProperties">Report Parking Spot</a>'
-          });
-          infowindow.open(map, marker);
-        })
+        InfowindowService.addReportListener(marker, map);
       },
 
       deleteCurrentMarker: function () {
@@ -153,7 +148,7 @@ angular.module('parkingSpot.factories', [])
     }
   })
 
-  .factory('ParkingSpotMarkerService', function (MapService, DatabaseService) {
+  .factory('ParkingSpotMarkerService', function (MapService, DatabaseService, InfowindowService) {
     var parkingSpots = [];
     var markers = [];
 
@@ -166,7 +161,7 @@ angular.module('parkingSpot.factories', [])
     }
 
     function setParkingspotMarkers(parkingspots) {
-      if(markers.length > 0) {
+      if (markers.length > 0) {
         deleteParkingspotMarkers();
       }
 
@@ -177,13 +172,7 @@ angular.module('parkingSpot.factories', [])
           icon: '../www/img/parking.png'
         });
 
-        var infowindow = new google.maps.InfoWindow({
-          content: parkingspot.free ? "<p>free parking</p>" : "costs: " + parkingspot.costs
-        });
-
-        marker.addListener('click', function () {
-          infowindow.open(MapService.getMap(), marker);
-        });
+        InfowindowService.addFindListener(marker, MapService.getMap(), parkingspot);
 
         markers.push(marker);
         parkingSpots.push(parkingspot);
@@ -221,7 +210,7 @@ angular.module('parkingSpot.factories', [])
 
   .factory('FilterService', function (MapService, ParkingSpotMarkerService, $q) {
     function finishFiltering(filter, newQueryNeeded) {
-      if(newQueryNeeded) {
+      if (newQueryNeeded) {
         ParkingSpotMarkerService.showNearParkingSpots(filter.coordinates, filter.perimeter).then(function () {
           checkPrice(filter.nomatter, filter.costs);
         });
@@ -282,7 +271,7 @@ angular.module('parkingSpot.factories', [])
 
   .factory('PopupService', function ($ionicPopup) {
     return {
-      showPopup: function(title, message) {
+      showPopup: function (title, message) {
         $ionicPopup.show({
           title: title,
           subTitle: message,
@@ -292,6 +281,40 @@ angular.module('parkingSpot.factories', [])
               type: 'button-positive'
             }
           ]
+        });
+      }
+    }
+  })
+
+  .factory('InfowindowService', function () {
+    var infowindow = null;
+    var parkingspotInfowindow = null;
+
+    return {
+      addReportListener: function (marker, map) {
+        infowindow = new google.maps.InfoWindow({
+          content: '<a class="button button-small button-assertive" href="#/app/addProperties">Report Parking Spot</a>'
+        });
+        marker.addListener('click', function () {
+          if (parkingspotInfowindow) {
+            parkingspotInfowindow.close();
+          }
+
+          infowindow.open(map, marker);
+        })
+      },
+
+      addFindListener: function (marker, map, parkingspot) {
+        parkingspotInfowindow = new google.maps.InfoWindow({
+          content: parkingspot.free ? "<p>free parking</p>" : "costs: " + parkingspot.costs
+        });
+
+        marker.addListener('click', function () {
+          if (infowindow) {
+            infowindow.close();
+          }
+
+          parkingspotInfowindow.open(map, this);
         });
       }
     }
