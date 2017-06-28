@@ -5,35 +5,37 @@
   </ion-header-bar>
   <ion-content padding="20">
     <form ng-submit="applyFilter()">
+      <label class="item item-input item-stacked-label valueHeader">
+        <span class="input-label positive">Location</span>
+      </label>
       <div class="item item-input">
-        <input type="text" ng-model="filter.location">
-        <button class="button button-icon icon ion-location positive"></button>
+        <input type="text" ng-model="filter.locationSearchText.value" ng-change="onLocationChanged()">
+        <button class="button button-icon icon ion-location positive" type="button" ng-click="setCurrentLocationText()"></button>
       </div>
 
 
-      <label class="item item-input item-stacked-label positive">
-        <span class="input-label">Perimeter</span>
+      <label class="item item-input item-stacked-label valueHeader">
+        <span class="input-label positive">Perimeter</span>
         <button class="button button-outline button-small button-positive resultLabel" ng-disabled="true">
-          {{filter.perimeter}}
+          {{filter.perimeter.value}} m
         </button>
       </label>
       <div class="item range range-positive">
-        0
-        <input type="range" name="volume" min="0" max="10000" step="100" ng-model="filter.perimeter">
+        100
+        <input type="range" name="volume" min="100" max="10000" step="100" ng-model="filter.perimeter.value" ng-change="onPerimeterChanged()">
         10 000 m
       </div>
 
-      <label class="item item-input item-stacked-label positive">
-        <span class="input-label">Price</span>
-        <button class="button button-outline button-small button-positive resultLabel" ng-if="!filter.nomatter" ng-disabled="true">
-          {{filter.costs}}
+      <label class="item item-input item-stacked-label valueHeader">
+        <span class="input-label positive">Price</span>
+        <button class="button button-outline button-small button-positive resultLabel" ng-disabled="true">
+          {{filter.costs}} €
         </button>
       </label>
-      <ion-checkbox ng-model="filter.nomatter">All prices</ion-checkbox>
-      <div class="item range range-positive" ng-if="!filter.nomatter">
-        0
-        <input type="range" name="volume" min="0.00" max="5.00" step="0.10" ng-model="filter.costs">
-        5 €
+      <div class="item range range-positive">
+        Free
+        <input type="range" name="volume" min="0.00" max="5.00" step="0.10" ng-model="filter.costs" ng-change="onCostsChanged()">
+        All Prices
       </div>
       <button class="button button-positive button-block" type="submit">OK</button>
     </form>

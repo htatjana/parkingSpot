@@ -26,9 +26,8 @@ angular.module('parkingSpot.factories', [])
       // Set marker to current position
       controlUI.addEventListener('click', function () {
         MapService.getCurrPosition().then(function (position) {
-          var pos = {lat: position.latitude, lng: position.longitude};
-          map.setCenter(pos);
-          MapService.setMarker(pos);
+          map.setCenter(position);
+          MapService.setMarker(position);
         });
       });
     }
@@ -37,7 +36,7 @@ angular.module('parkingSpot.factories', [])
       initMap: function (element) {
         MapService.getCurrPosition().then(function (position) {
           MapService.setMap(new google.maps.Map(element, {
-            center: {lat: position.latitude, lng: position.longitude},
+            center: position,
             zoom: 16,
             zoomControl: false,
             streetViewControl: false,
@@ -47,8 +46,7 @@ angular.module('parkingSpot.factories', [])
           var map = MapService.getMap();
 
           map.addListener('click', function (event) {
-            var pos = {lat: event.latLng.lat(), lng: event.latLng.lng()};
-            MapService.setMarker(pos);
+            MapService.setMarker({lat: event.latLng.lat(), lng: event.latLng.lng()});
           });
 
           var centerControlDiv = document.createElement('div');
@@ -63,7 +61,6 @@ angular.module('parkingSpot.factories', [])
 
 
   .factory('MapService', function ($q, PopupService, InfowindowService) {
-    var currentPosition = {};
     var map;
     var marker;
 
@@ -78,8 +75,6 @@ angular.module('parkingSpot.factories', [])
     }
 
     var methods = {
-      currentPosition: currentPosition,
-
       getMap: function () {
         return map;
       },
@@ -98,7 +93,7 @@ angular.module('parkingSpot.factories', [])
           map: map
         });
 
-        InfowindowService.addReportListener(marker, map);
+        InfowindowService.addInfowindow(marker, map);
       },
 
       deleteCurrentMarker: function () {
@@ -114,9 +109,8 @@ angular.module('parkingSpot.factories', [])
         var q = $q.defer();
         if (navigator.geolocation) {
           var watchID = navigator.geolocation.watchPosition(function (position) {
-            //coordinates can be accessed via position.ccords.latitude and position.coords.longitude
             navigator.geolocation.clearWatch(watchID);
-            q.resolve(position.coords);
+            q.resolve({lat: position.coords.latitude, lng: position.coords.longitude});
           }, function (error) {
             navigator.geolocation.clearWatch(watchID);
             handleError(error);
@@ -126,7 +120,6 @@ angular.module('parkingSpot.factories', [])
         }
       }
     };
-
     return methods;
   })
 
@@ -151,13 +144,25 @@ angular.module('parkingSpot.factories', [])
   .factory('ParkingSpotMarkerService', function (MapService, DatabaseService, InfowindowService) {
     var parkingSpots = [];
     var markers = [];
+    var clusterer = null;
 
+    function setMarkerInCluster(map, markers) {
+      clusterer = new MarkerClusterer(map, markers, {
+        maxZoom: 17,
+        minimumClusterSize: 3,
+        zoomOnClick: true,
+        imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m'
+      });
+    }
 
     function deleteParkingspotMarkers() {
       parkingSpots = [];
       markers.forEach(function (marker) {
         marker.setMap(null);
       });
+
+      markers = [];
+      clusterer.clearMarkers();
     }
 
     function setParkingspotMarkers(parkingspots) {
@@ -172,20 +177,18 @@ angular.module('parkingSpot.factories', [])
           icon: '../www/img/parking.png'
         });
 
-        InfowindowService.addFindListener(marker, MapService.getMap(), parkingspot);
+        InfowindowService.addInfowindow(marker, MapService.getMap(), parkingspot);
 
         markers.push(marker);
         parkingSpots.push(parkingspot);
       });
+
+      setMarkerInCluster(MapService.getMap(), markers);
     }
 
-    var methods = {
-      actualizeParkingSpotMarkers: function (position) {
-        parkingSpots = [];
-        methods.showNearParkingSpots(position, 900);
-      },
-
+    return {
       showNearParkingSpots: function (coordinates, distance) {
+        parkingSpots = [];
         return DatabaseService.findNearParkingSpots(coordinates, distance).then(function (parkingspots) {
           setParkingspotMarkers(parkingspots);
         });
@@ -205,27 +208,50 @@ angular.module('parkingSpot.factories', [])
         setParkingspotMarkers(filteredParkingSpots);
       }
     };
-    return methods;
   })
 
   .factory('FilterService', function (MapService, ParkingSpotMarkerService, $q) {
-    function finishFiltering(filter, newQueryNeeded) {
-      if (newQueryNeeded) {
-        ParkingSpotMarkerService.showNearParkingSpots(filter.coordinates, filter.perimeter).then(function () {
-          checkPrice(filter.nomatter, filter.costs);
-        });
-      } else {
-        checkPrice(filter.nomatter, filter.costs);
-      }
+    var filter = {
+      costs: 5.00,
+      perimeter: {
+        value: 900,
+        changed: false
+      },
+      locationSearchText: {
+        value: "",
+        changed: false
+      },
+      coordinates: {}
+    };
+
+    function transformCoordinatesToText(position) {
+      var q = $q.defer();
+      var geocoder = new google.maps.Geocoder();
+      geocoder.geocode({'location': position}, function (results, status) {
+        if (status === 'OK') {
+          if (results[1]) {
+            for (var i = 0; i < results[0].address_components.length; i++) {
+              for (var k = 0; k < results[0].address_components[i].types.length; k++) {
+                if (results[0].address_components[i].types[k] === "street_number")
+                  streetNumber = results[0].address_components[i].long_name;
+                else if (results[0].address_components[i].types[k] === "route")
+                  streetName = results[0].address_components[i].short_name;
+                else if (results[0].address_components[i].types[k] === "locality")
+                  city = results[0].address_components[i].long_name;
+              }
+            }
+            q.resolve(streetName + ' ' + streetNumber + ' ' + city);
+          } else {
+            q.reject('No results found');
+          }
+        } else {
+          q.reject('Geocoder failed due to: ' + status);
+        }
+      });
+      return q.promise;
     }
 
-    function checkPrice(nomatter, costs) {
-      if (!nomatter) {
-        ParkingSpotMarkerService.filterByPrice(costs);
-      }
-    }
-
-    function transformToCoordinates(searchString) {
+    function transformTextToCoordinates(searchString) {
       var q = $q.defer();
       var geocoder = new google.maps.Geocoder();
       geocoder.geocode({'address': searchString}, function (results, status) {
@@ -241,32 +267,42 @@ angular.module('parkingSpot.factories', [])
       return q.promise;
     }
 
-    return {
+    var methods = {
+      filter: filter,
 
-      applyFilter: function (filter) {
-        console.log(filter);
-        var newQueryNeeded = false;
-
-        if (!(filter.perimeter === 900)) {
-          filter.perimeter = parseInt(filter.perimeter);
-          newQueryNeeded = true;
-        }
-
-        // Check if location has changed
-        if (filter.location === 'Current Position') {
-          filter.coordinates = MapService.currentPosition;
-          finishFiltering(filter, newQueryNeeded);
-        } else {
-          // Transform search field input to coordinates
-          transformToCoordinates(filter.location).then(function (coordinates) {
+      applyFilter: function () {
+        if(filter.locationSearchText.changed) {
+          transformTextToCoordinates(filter.locationSearchText.value).then(function (coordinates) {
             filter.coordinates = coordinates;
-            newQueryNeeded = true;
-            finishFiltering(filter, newQueryNeeded)
+            methods.applyPerimeterAndPrice(coordinates);
           });
+        } else {
+          methods.applyPerimeterAndPrice(filter.coordinates);
         }
-      }
-    }
+      },
 
+      applyPerimeterAndPrice: function (coordinates) {
+        if (filter.perimeter.changed) {
+          ParkingSpotMarkerService.showNearParkingSpots(filter.coordinates, filter.perimeter.value).then(function () {
+            ParkingSpotMarkerService.filterByPrice(filter.costs);
+          });
+        } else {
+          ParkingSpotMarkerService.filterByPrice(filter.costs);
+        }
+      },
+
+      setCurrentLocationSearchText: function () {
+        MapService.getCurrPosition().then(function (position) {
+          filter.coordinates = position;
+          transformCoordinatesToText(position).then(function (searchText) {
+            filter.locationSearchText.value = searchText;
+          })
+        })
+      }
+    };
+    methods.setCurrentLocationSearchText();
+
+    return methods;
   })
 
   .factory('PopupService', function ($ionicPopup) {
@@ -287,35 +323,42 @@ angular.module('parkingSpot.factories', [])
   })
 
   .factory('InfowindowService', function () {
-    var infowindow = null;
-    var parkingspotInfowindow = null;
+    var infowindow = new google.maps.InfoWindow({content: ''});
+    var reportButton = '<a class="button button-small button-assertive" href="#/app/addProperties">Report Parking Spot</a>';
+
+    function checkDate(parkingspot) {
+      var days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      var day = new Date().getDay();
+
+      // If chargeable property is false for the current weekday, set the parkingspot free property to true
+      if (!parkingspot.free && !parkingspot.weekdays[days[day]]) {
+        parkingspot.free = true;
+      }
+    }
 
     return {
-      addReportListener: function (marker, map) {
-        infowindow = new google.maps.InfoWindow({
-          content: '<a class="button button-small button-assertive" href="#/app/addProperties">Report Parking Spot</a>'
-        });
+      addInfowindow: function (marker, map, parkingspot) {
         marker.addListener('click', function () {
-          if (parkingspotInfowindow) {
-            parkingspotInfowindow.close();
-          }
+          if (parkingspot) {
+            checkDate(parkingspot);
 
+            var freeParking_InfoTemp =
+              "<div class='infowindow'>" +
+              "<div class='infoIcon'><img src='img/free-sticker.png' class='infowindowIcon'></div>" +
+              "<p>Free parking</p>" +
+              "</div>";
+            var parkingWithCosts_InfoTemp =
+              "<div class='infowindow'>" +
+              "<div class='infoIcon'><img src='img/coins.png' class='infowindowIcon'></div>" +
+              "<p>" + parkingspot.costs + " € per hour </p>" +
+              "</div>";
+
+            infowindow.setContent(parkingspot.free ? freeParking_InfoTemp : parkingWithCosts_InfoTemp);
+          } else {
+            infowindow.setContent(reportButton);
+          }
           infowindow.open(map, marker);
         })
-      },
-
-      addFindListener: function (marker, map, parkingspot) {
-        parkingspotInfowindow = new google.maps.InfoWindow({
-          content: parkingspot.free ? "<p>free parking</p>" : "costs: " + parkingspot.costs
-        });
-
-        marker.addListener('click', function () {
-          if (infowindow) {
-            infowindow.close();
-          }
-
-          parkingspotInfowindow.open(map, this);
-        });
       }
     }
   });

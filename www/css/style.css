@@ -17,11 +17,13 @@ img {
   font-weight: 800;
 }
 
+.valueHeader {
+  padding-right: 5px;
+}
+
 
 .button.button-block {
   margin-top: 0;
-  margin-bottom: 0;
-  font-size: 110%;
 }
 
 .checkbox input {
@@ -32,4 +34,18 @@ img {
   text-align: center;
   padding: 5px 5px;
   padding-bottom: 0;
+}
+
+/* Style Infowindow */
+.infowindow {
+  padding-left: 10px;
+}
+
+.infoIcon {
+  padding-left: 10px;
+}
+
+.infowindowIcon {
+  width: 30px;
+  height: 30px;
 }
