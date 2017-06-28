@@ -1,26 +1,32 @@
 angular.module('parkingSpot.controllers', [])
 
-  .controller('AppCtrl', function ($scope) {
-  })
+  .controller('AppCtrl', function ($scope) {})
 
 
   .controller('MapCtrl', function ($scope, MapService, DatabaseService, ParkingSpotMarkerService, FilterService, $ionicModal) {
-    $scope.filter = {
-      perimeter: 900,
-      costs: 0,
-      nomatter: true,
-      location: 'Current Position'
+    $scope.filter = FilterService.filter;
+
+    $scope.setCurrentLocationText = function () {
+      FilterService.setCurrentLocationSearchText();
+    };
+
+    $scope.onLocationChanged = function () {
+      $scope.filter.locationSearchText.changed = true;
+    };
+
+    $scope.onPerimeterChanged = function () {
+      $scope.filter.perimeter.value = parseInt($scope.filter.perimeter.value);
+      $scope.filter.perimeter.changed = true;
     };
 
     $scope.applyFilter= function () {
-      FilterService.applyFilter($scope.filter);
+      FilterService.applyFilter();
       $scope.closeFilter();
     };
 
     //Inital loading of parking spot markers
     MapService.getCurrPosition().then(function (position) {
-      ParkingSpotMarkerService.showNearParkingSpots({lat: position.latitude, lng: position.longitude}, 900);
-      MapService.currentPosition = {lat: position.latitude, lng: position.longitude};
+      ParkingSpotMarkerService.showNearParkingSpots(position, 900);
     });
 
     $ionicModal.fromTemplateUrl('templates/filterModal.html', {
@@ -38,11 +44,10 @@ angular.module('parkingSpot.controllers', [])
       $scope.modal.hide();
     };
 
-
   })
 
 
-  .controller('addPropertiesCtrl', function ($scope, $ionicModal, MapService, DatabaseService, PopupService, $ionicLoading, $state, ParkingSpotMarkerService) {
+  .controller('addPropertiesCtrl', function ($scope, $ionicModal, MapService, DatabaseService, PopupService, $ionicLoading, $state, $timeout, ParkingSpotMarkerService, FilterService) {
     var pos = MapService.getMarkerPosition();
 
     $scope.staticMapSrc = "https://maps.googleapis.com/maps/api/staticmap?center=&zoom=15&scale=1&size=600x300&" +
@@ -55,7 +60,7 @@ angular.module('parkingSpot.controllers', [])
         coordinates: [pos.lat, pos.lng]
       },
       free: true,
-      costs: 0,
+      costs: "",
       weekdays: {
         Mon: true,
         Tue: true,
@@ -81,7 +86,10 @@ angular.module('parkingSpot.controllers', [])
           $ionicLoading.hide();
           PopupService.showPopup('Done', 'Your parking spot was saved to database');
           $state.transitionTo("app.map");
-          showSavedParkingSpot();
+          $timeout(function() {
+            google.maps.event.trigger(MapService.getMap(), 'resize');
+            showSavedParkingSpot();
+          });
         } else {
           $ionicLoading.hide();
           PopupService.showPopup('Failed', 'Saving parking spot to database failed');
@@ -90,7 +98,7 @@ angular.module('parkingSpot.controllers', [])
     };
 
     function showSavedParkingSpot() {
-      ParkingSpotMarkerService.actualizeParkingSpotMarkers(pos);
+      ParkingSpotMarkerService.showNearParkingSpots(pos, FilterService.filter.perimeter);
       MapService.getMap().setCenter(pos);
       MapService.deleteCurrentMarker();
     }
