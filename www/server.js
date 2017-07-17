@@ -25,7 +25,6 @@ app.get("/", function (req, res) {
 
 app.post("/nearbyParkingSpots", function (req, res) {
   var data = req.body;
-  console.log(data);
 
   db.collection('parkingspots').find(
     {
@@ -40,7 +39,7 @@ app.post("/nearbyParkingSpots", function (req, res) {
       }
     }).toArray(function (error, data) {
     if (error) {
-      console.log(error);
+      console.error(error);
     } else {
       res.send(data);
     }
@@ -49,9 +48,8 @@ app.post("/nearbyParkingSpots", function (req, res) {
 
 app.post("/parkingSpot", function (req, res) {
   var parkingSpot = req.body;
-  console.log("arrived parkingSpot: ", parkingSpot);
 
-  db.collection("parkingspots").insert(parkingSpot, function (error, data) {
+  db.collection("parkingspots").insert(parkingSpot, function (error) {
     if (error) {
       console.error(error);
     } else {

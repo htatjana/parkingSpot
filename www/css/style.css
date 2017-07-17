@@ -36,16 +36,37 @@ img {
   padding-bottom: 0;
 }
 
-/* Style Infowindow */
-.infowindow {
-  padding-left: 10px;
+.errorMsg {
+  color: red;
+  text-align: center;
+  padding: 1px;
 }
 
-.infoIcon {
+/* Style Infowindow */
+.infowindow {
+  vertical-align: middle;
+}
+
+.infowindowText {
   padding-left: 10px;
+  display: inline-block;
 }
 
 .infowindowIcon {
-  width: 30px;
-  height: 30px;
+  width: 35px;
+  height: 35px;
+}
+
+.parkingSpotImg {
+  width: 80px;
+  height: 80px;
+}
+
+.parkingSpotFormImg {
+  width: 200px;
+  height: 200px;
+}
+
+.center {
+  width: 45%; margin: auto;
 }

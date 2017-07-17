@@ -9,7 +9,7 @@
         <span class="input-label positive">Location</span>
       </label>
       <div class="item item-input">
-        <input type="text" ng-model="filter.locationSearchText.value" ng-change="onLocationChanged()">
+        <input type="text" ng-model="filter.locationSearchText">
         <button class="button button-icon icon ion-location positive" type="button" ng-click="setCurrentLocationText()"></button>
       </div>
 
@@ -17,12 +17,12 @@
       <label class="item item-input item-stacked-label valueHeader">
         <span class="input-label positive">Perimeter</span>
         <button class="button button-outline button-small button-positive resultLabel" ng-disabled="true">
-          {{filter.perimeter.value}} m
+          {{filter.perimeter}} m
         </button>
       </label>
       <div class="item range range-positive">
         100
-        <input type="range" name="volume" min="100" max="10000" step="100" ng-model="filter.perimeter.value" ng-change="onPerimeterChanged()">
+        <input type="range" name="volume" min="100" max="10000" step="100" ng-model="filter.perimeter">
         10 000 m
       </div>
 
@@ -34,7 +34,7 @@
       </label>
       <div class="item range range-positive">
         Free
-        <input type="range" name="volume" min="0.00" max="5.00" step="0.10" ng-model="filter.costs" ng-change="onCostsChanged()">
+        <input type="range" name="volume" min="0.00" max="5.00" step="0.10" ng-model="filter.costs">
         All Prices
       </div>
       <button class="button button-positive button-block" type="submit">OK</button>

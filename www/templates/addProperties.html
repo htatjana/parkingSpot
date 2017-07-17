@@ -1,10 +1,10 @@
 <ion-view view-title="Report parking spot">
-  <ion-content>
+  <ion-content padding="false">
 
     <div class="item item-divider item-positive">Position</div>
     <img src="{{staticMapSrc}}">
 
-    <form name="propertiesForm" ng-submit="submitParkingSpot()">
+    <form name="propertiesForm" ng-submit="propertiesForm.$valid && submitParkingSpot(parkingspot)" novalidate>
       <div class="item item-divider item-positive">Costs</div>
       <ion-list>
         <ion-radio ng-model="parkingspot.free" ng-value="true">free</ion-radio>
@@ -21,16 +21,24 @@
             </div>
           </div>
         </div>
+        <p class="errorMsg" ng-show="propertiesForm.$submitted && !propertiesForm.$valid">Please enter costs between
+          0.10 an 5.00 €</p>
 
         <label class="item item-input">
-          <input type="number" id="costs" ng-model="parkingspot.costs" step="0.10" placeholder="0.50" min="0.00" max="5.00" required>
+          <input type="number" id="costs" name="costs" ng-model="parkingspot.costs" step="0.10" placeholder="0.50"
+                 min="0.10" max="5.00" ng-required="true">
           <span class="input-label"> € per hour</span>
         </label>
       </div>
 
-      <div class="bar-footer">
-        <button class="button button-block button-positive" type="submit">Report parking spot</button>
+      <div class="item item-divider item-positive">Photos</div>
+      <p></p>
+      <div class="center">
+        <button class="button button-outline button-positive" type="button" ng-if="!parkingspot.photo" ng-click="takePhoto()">Take photo</button>
       </div>
+      <div class="center" ng-if="parkingspot.photo"><img class="parkingSpotFormImg" src="{{parkingspot.photo}}"></div>
+      <p></p>
+      <button class="button button-full button-positive" type="submit">Report parking spot</button>
     </form>
   </ion-content>
 </ion-view>

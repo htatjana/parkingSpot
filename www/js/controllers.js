@@ -1,33 +1,27 @@
 angular.module('parkingSpot.controllers', [])
 
-  .controller('AppCtrl', function ($scope) {})
+  .controller('MapCtrl', function ($scope, $state, MapService, ParkingSpotMarkerService, FilterService, $ionicModal, $timeout) {
 
-
-  .controller('MapCtrl', function ($scope, MapService, DatabaseService, ParkingSpotMarkerService, FilterService, $ionicModal) {
     $scope.filter = FilterService.filter;
 
+    $scope.$on("$ionicView.enter", function () {
+      if (MapService.mapNeedsResize) {
+        google.maps.event.trigger(MapService.getMap(), 'resize');
+        MapService.deleteCurrentMarker();
+        MapService.mapNeedsResize = false;
+      }
+    });
+
     $scope.setCurrentLocationText = function () {
-      FilterService.setCurrentLocationSearchText();
+      MapService.getCurrPosition().then(function (position) {
+        FilterService.setLocationSearchText(position);
+      });
     };
 
-    $scope.onLocationChanged = function () {
-      $scope.filter.locationSearchText.changed = true;
-    };
-
-    $scope.onPerimeterChanged = function () {
-      $scope.filter.perimeter.value = parseInt($scope.filter.perimeter.value);
-      $scope.filter.perimeter.changed = true;
-    };
-
-    $scope.applyFilter= function () {
+    $scope.applyFilter = function () {
       FilterService.applyFilter();
       $scope.closeFilter();
     };
-
-    //Inital loading of parking spot markers
-    MapService.getCurrPosition().then(function (position) {
-      ParkingSpotMarkerService.showNearParkingSpots(position, 900);
-    });
 
     $ionicModal.fromTemplateUrl('templates/filterModal.html', {
       scope: $scope,
@@ -43,11 +37,9 @@ angular.module('parkingSpot.controllers', [])
     $scope.closeFilter = function () {
       $scope.modal.hide();
     };
-
   })
 
-
-  .controller('addPropertiesCtrl', function ($scope, $ionicModal, MapService, DatabaseService, PopupService, $ionicLoading, $state, $timeout, ParkingSpotMarkerService, FilterService) {
+  .controller('AddPropertiesCtrl', function ($scope, $ionicModal, $ionicLoading, $state, $timeout, $q, MapService, DatabaseService, PopupService, ParkingSpotMarkerService, FilterService) {
     var pos = MapService.getMarkerPosition();
 
     $scope.staticMapSrc = "https://maps.googleapis.com/maps/api/staticmap?center=&zoom=15&scale=1&size=600x300&" +
@@ -59,6 +51,7 @@ angular.module('parkingSpot.controllers', [])
         type: "Point",
         coordinates: [pos.lat, pos.lng]
       },
+      photo: "",
       free: true,
       costs: "",
       weekdays: {
@@ -72,34 +65,62 @@ angular.module('parkingSpot.controllers', [])
       }
     };
 
-    $scope.submitParkingSpot = function () {
-      if ($scope.parkingspot.free) {
-        $scope.parkingspot.costs = 0;
+    $scope.takePhoto = function () {
+      MapService.mapNeedsResize = true;
+      navigator.camera.getPicture(function (imageData) {
+        $scope.parkingspot.photo = "data:image/jpeg;base64," + imageData;
+        $scope.$apply();
+      }, null, {
+        quality: 75,
+        targetWidth: 200,
+        targetHeight: 200,
+        destinationType: 0
+      });
+    };
+
+    $scope.submitParkingSpot = function (parkingspot) {
+      if (parkingspot.free) {
+        parkingspot.costs = 0;
       }
 
       $ionicLoading.show({
         template: 'Saving parking spot to database...'
       });
 
-      DatabaseService.saveParkingSpotToDB($scope.parkingspot).then(function (response) {
+      DatabaseService.saveParkingSpotToDB(parkingspot).then(function (response) {
         if (response.status === 200) {
           $ionicLoading.hide();
           PopupService.showPopup('Done', 'Your parking spot was saved to database');
-          $state.transitionTo("app.map");
-          $timeout(function() {
-            google.maps.event.trigger(MapService.getMap(), 'resize');
-            showSavedParkingSpot();
-          });
+          $state.go("map");
+          showSavedParkingSpot();
         } else {
           $ionicLoading.hide();
           PopupService.showPopup('Failed', 'Saving parking spot to database failed');
         }
-      })
+      });
     };
 
     function showSavedParkingSpot() {
-      ParkingSpotMarkerService.showNearParkingSpots(pos, FilterService.filter.perimeter);
-      MapService.getMap().setCenter(pos);
-      MapService.deleteCurrentMarker();
+      $ionicLoading.show({
+        template: 'Loading parkingSpots...'
+      });
+      ParkingSpotMarkerService.showNearParkingSpots({
+        coordinates: pos,
+        distance: parseFloat(FilterService.filter.perimeter)
+      }).then(function (markers) {
+        $ionicLoading.hide();
+
+        markers.forEach(function (marker) {
+          var markerpos = {lat: marker.getPosition().lat(), lng: marker.getPosition().lng()};
+
+          if (markerpos.lat === pos.lat && markerpos.lng === pos.lng) {
+            google.maps.event.trigger(marker, 'click');
+          }
+
+          MapService.deleteCurrentMarker();
+          MapService.getMap().setCenter(pos);
+          MapService.getMap().setZoom(18);
+        });
+      });
     }
   });
