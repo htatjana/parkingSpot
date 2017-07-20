@@ -1,6 +1,6 @@
 angular.module('parkingSpot.factories', [])
 
-  .factory('MapService', function ($q, $ionicLoading, $timeout, InfowindowService, PopupService, $rootScope) {
+  .factory('MapService', function ($q, $ionicLoading, $timeout, InfowindowService, PopupService) {
     var map;
     var marker;
     var mapNeedsRisze = false;
@@ -222,9 +222,9 @@ angular.module('parkingSpot.factories', [])
 
   .factory('PopupService', function ($ionicPopup, $window) {
 
-    function checkLocationState(){
-      cordova.plugins.diagnostic.isLocationEnabled(function(enabled){
-        if(enabled) {
+    function checkLocationState() {
+      cordova.plugins.diagnostic.isLocationEnabled(function (enabled) {
+        if (enabled) {
           $window.location.reload();
         } else {
           methods.showRequireConfirm();
@@ -273,7 +273,7 @@ angular.module('parkingSpot.factories', [])
     return methods;
   })
 
-  .factory('InfowindowService', function ($ionicModal) {
+  .factory('InfowindowService', function () {
     var position;
 
     var watchID = navigator.geolocation.watchPosition(function (pos) {
@@ -307,39 +307,39 @@ angular.module('parkingSpot.factories', [])
         })
       },
 
-      buildTemplate: function(parkingspot) {
-      var distance = 0;
-      var content = '<a class="button button-small button-assertive" href="#/addProperties">Report parking spot</a>';
+      buildTemplate: function (parkingspot) {
+        var distance = 0;
+        var content = '<a class="button button-small button-assertive" href="#/addProperties">Report parking spot</a>';
 
-      if (parkingspot) {
-        distance = calculateDistance(position, new google.maps.LatLng(parkingspot.location.coordinates[0], parkingspot.location.coordinates[1]));
-        checkDate(parkingspot);
+        if (parkingspot) {
+          distance = calculateDistance(position, new google.maps.LatLng(parkingspot.location.coordinates[0], parkingspot.location.coordinates[1]));
+          checkDate(parkingspot);
 
-        var photo = "";
-        if (parkingspot.photo) {
-          photo = "<div class='center'><img class='parkingSpotImg' src='" + parkingspot.photo + "'></div>";
+          var photo = "";
+          if (parkingspot.photo) {
+            photo = "<div class='center'><img class='parkingSpotImg' src='" + parkingspot.photo + "'></div>";
+          }
+
+          if (parkingspot.free) {
+            content =
+              "<div class='infowindow'>" +
+              "<img src='img/free-sticker.png' class='infowindowIcon'>" +
+              "<span class='infowindowText'><b>Free parking</b>" +
+              "<br>" + distance + " m away from you</span><br>" +
+              photo +
+              "</div>";
+          } else {
+            content =
+              "<div class='infowindow'>" +
+              "<img src='img/coins.png' class='infowindowIcon'>" +
+              "<span class='infowindowText'>" + "<b>" + parkingspot.costs + " € per hour </b>" +
+              "<br>" + distance + " m away from you</span>" +
+              photo +
+              "</div>";
+          }
         }
-
-        if (parkingspot.free) {
-          content =
-            "<div class='infowindow'>" +
-            "<img src='img/free-sticker.png' class='infowindowIcon'>" +
-            "<span class='infowindowText'><b>Free parking</b>" +
-            "<br>" + distance + " m away from you</span><br>" +
-            photo +
-            "</div>";
-        } else {
-          content =
-            "<div class='infowindow'>" +
-            "<img src='img/coins.png' class='infowindowIcon'>" +
-            "<span class='infowindowText'>" + "<b>" + parkingspot.costs + " € per hour </b>" +
-            "<br>" + distance + " m away from you</span>" +
-            photo +
-            "</div>";
-        }
+        return content;
       }
-      return content;
-    }
     };
 
     return methods;

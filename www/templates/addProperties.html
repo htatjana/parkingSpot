@@ -36,7 +36,7 @@
       <div class="center">
         <button class="button button-outline button-positive" type="button" ng-if="!parkingspot.photo" ng-click="takePhoto()">Take photo</button>
       </div>
-      <div class="center" ng-if="parkingspot.photo"><img class="parkingSpotFormImg" src="{{parkingspot.photo}}"></div>
+      <div class="previewPhoto" ng-if="parkingspot.photo"><img class="parkingSpotFormImg" src="{{parkingspot.photo}}"></div>
       <p></p>
       <button class="button button-full button-positive" type="submit">Report parking spot</button>
     </form>

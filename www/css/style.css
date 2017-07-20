@@ -67,6 +67,10 @@ img {
   height: 200px;
 }
 
+.previewPhoto {
+  padding-left: 25%
+}
+
 .center {
-  width: 45%; margin: auto;
+  padding-left: 35%;
 }
