@@ -18,7 +18,7 @@ module.exports = function (config) {
       './node_modules/angular/angular.js',
       './node_modules/angular-animate/angular-animate.js',
       './node_modules/angular-sanitize/angular-sanitize.js',
-      './node_modules/@uirouter/angularjs/release/angular-ui-router.js',
+      './node_modules/angular-ui-router/release/angular-ui-router.js',
       './node_modules/angular-mocks/angular-mocks.js',
       'www/lib/ionic/js/ionic.js',
       'www/lib/ionic/js/ionic-angular.js',

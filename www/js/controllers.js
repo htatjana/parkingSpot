@@ -1,6 +1,6 @@
 angular.module('parkingSpot.controllers', [])
 
-  .controller('MapCtrl', function ($scope, $state, MapService, ParkingSpotMarkerService, FilterService, $ionicModal, $timeout) {
+  .controller('MapCtrl', function ($scope, $state, $ionicModal, MapService, ParkingSpotMarkerService, FilterService) {
 
     $scope.filter = FilterService.filter;
 
