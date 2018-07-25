@@ -6,7 +6,7 @@
      "npm test"
 
 
-If you have any questions about this project, please use the following information to contact me:
+If you have any questions about this project, please contact me with the following mail address:
 
 Tatjana Hüsch
 huesch.tatjana@gmail.com
